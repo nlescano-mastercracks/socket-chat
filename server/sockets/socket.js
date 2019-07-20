@@ -1,7 +1,7 @@
 const { io } = require('../server');
 
 const { Usuarios } = require('../classes/usuarios')
-const { crearMensaje } = require('../utilidades/utilidades')
+const { crearMensajes } = require('../utilidades/utilidades')
 const usuario = new Usuarios()
 
 
@@ -15,25 +15,31 @@ io.on('connection', (client) => {
         }
         client.join(data.sala)
         usuario.agregarPersona(client.id, data.nombre, data.sala)
-        client.broadcast.to(data.sala).emit('listaPersona', usuario.getPersonasPorSala())
+        client.broadcast.to(data.sala).emit('listaPersona', usuario.getPersonasPorSala(data.sala))
+        client.broadcast.to(data.sala).emit('crearMensajes', crearMensajes('Administrador', `${data.nombre} Entro`))
+
         callback(usuario.getPersonasPorSala(data.sala))
     });
 
-    client.on('crearMensaje', (data) => {
+    client.on('crearMensajes', (data, callback) => {
+
+        console.log(data);
         let persona = usuario.getPersona(client.id)
-        let mensaje = crearMensaje(persona.nombre, data.mensaje);
-        client.broadcast.to(persona.sala).emit('crearMensaje', mensaje);
+        let mensaje = crearMensajes(persona.nombre, data.mensaje);
+        client.broadcast.to(persona.sala).emit('crearMensajes', mensaje);
+        callback(data)
     })
 
     client.on('disconnect', () => {
             let personaBorrada = usuario.borrarPersona(client.id);
-            client.broadcast.to(personaBorrada.sala).emit('crearMensaje', crearMensaje('Administrador', `${personaBorrada.nombre} Salio`))
-            client.broadcast.to(personaBorrada.sala).emit('listaPersona', usuario.getPersonasPorSala())
+
+            client.broadcast.to(personaBorrada.sala).emit('crearMensajes', crearMensajes('Administrador', `${personaBorrada.nombre} Salio`))
+            client.broadcast.to(personaBorrada.sala).emit('listaPersona', usuario.getPersonasPorSala(personaBorrada.sala))
         })
         // Mensaje privados
     client.on('mensajePrivado', data => {
         let persona = usuario.getPersona(client.id)
-        client.broadcast.to(data.para).emit('mensajePrivado', crearMensaje(persona.nombre, data.mensaje))
+        client.broadcast.to(data.para).emit('mensajePrivado', crearMensajes(persona.nombre, data.mensaje))
 
     })
 

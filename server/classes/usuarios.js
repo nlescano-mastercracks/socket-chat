@@ -32,7 +32,7 @@ class Usuarios {
     }
     borrarPersona(id) {
         let perBorrada = this.getPersona(id)
-        this.personas.filter(per => {
+        this.personas = this.personas.filter(per => {
             return per.id != id;
         })
         return perBorrada;
